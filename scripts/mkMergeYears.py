@@ -122,12 +122,15 @@ class MergerFactory:
        for folderHR, year_nuisances in foldersToMergeNuisancesFiles.items() :
          year_samples = foldersToMergeSamplesFiles[folderHR]
 
+         print ("year_nuisances = ", year_nuisances)
+         print ("year_samples   = ", year_samples)
+
          #
          # read list of samples
          #
          samples = {}
-         if os.path.exists(opt.samplesFile) :
-           handle = open(opt.samplesFile,'r')
+         if os.path.exists(year_samples) :
+           handle = open(year_samples,'r')
            exec(handle.read())
            handle.close()
            # clean the dictionary to remove globals due to "exec" funcionality
@@ -138,8 +141,8 @@ class MergerFactory:
          # read list of nuisances
          #
          nuisances = {}
-         if os.path.exists(opt.nuisancesFile) :
-           handle = open(opt.nuisancesFile,'r')
+         if os.path.exists(year_nuisances) :
+           handle = open(year_nuisances,'r')
            exec(handle.read())
            handle.close()
            # clean the dictionary to remove globals due to "exec" funcionality
@@ -271,6 +274,9 @@ class MergerFactory:
                  histos_down_to_be_summed_weights = []
 
                  for folderHR, folder in foldersToMerge.items():
+
+                   print ("folderHR = ", cutName, " :: ", nuisanceName, "::", folderHR)
+
                    #
                    # If the histogram up and down are present in the input root files, add the histograms up/down
                    # No matter if then the nuisance is not a shape nuisance but lnN ... still, you add the histograms!
@@ -282,6 +288,8 @@ class MergerFactory:
                      histos_up_to_be_summed_weights.append ( 1.0 )
                      histos_down_to_be_summed_weights.append ( 1.0 )
 
+                     print ("     --->>>>>>>>>>>>>>> added = ", nameTempUp)
+
                    else :
                      #
                      # it might be that for that particular sample
@@ -292,13 +300,18 @@ class MergerFactory:
                      # The nuisance might have been a lnN ... this has to be handled properly
                      #
 
+                     # print ("     not added?  ", nameTempUp)
+
                      if nuisanceName in all_nuisances[folderHR].keys() :
+                       print ("     I should add the nuisance, that was -->", all_nuisances[folderHR][nuisanceName]['type'], " and was the sample ", sampleName, "  there? ", sampleName in all_nuisances[folderHR][nuisanceName]['samples'].keys())
+
                        if all_nuisances[folderHR][nuisanceName]['type'] == 'lnN' and  sampleName in all_nuisances[folderHR][nuisanceName]['samples'].keys() :
                          #
                          #    lnN nuisances:
                          #    the up/down could be given separately:   '1.03/0.99'
                          #    or unique :                              '1.02'
                          #
+                         print ("     ONE")
                          histos_up_to_be_summed.append  ( histograms[folderHR][folder_name][nameTemp] )
                          histos_down_to_be_summed.append( histograms[folderHR][folder_name][nameTemp] )
                          if "/" not in all_nuisances[folderHR][nuisanceName]['samples'][sampleName]:
@@ -310,6 +323,7 @@ class MergerFactory:
                            histos_down_to_be_summed_weights.append ( val_down )
 
                      else:
+                       print ("     NOOOOOO")
                        histos_up_to_be_summed.append  ( histograms[folderHR][folder_name][nameTemp] )
                        histos_down_to_be_summed.append( histograms[folderHR][folder_name][nameTemp] )
                        histos_up_to_be_summed_weights.append   ( 1.0 )
