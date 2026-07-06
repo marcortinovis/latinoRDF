@@ -126,27 +126,24 @@ class MergerFactory:
          print ("year_samples   = ", year_samples)
 
          #
-         # read list of samples
+         # read list of samples and nuisance in one go --> dependencies are respected in this way
          #
-         samples = {}
-         if os.path.exists(year_samples) :
-           handle = open(year_samples,'r')
-           exec(handle.read())
-           handle.close()
-           # clean the dictionary to remove globals due to "exec" funcionality
-           samples = {k: v for k, v in samples.items() if not (k.startswith('__') and k.endswith('__'))}
-         temp_samples = samples
 
-         #
-         # read list of nuisances
-         #
-         nuisances = {}
-         if os.path.exists(year_nuisances) :
-           handle = open(year_nuisances,'r')
-           exec(handle.read())
-           handle.close()
-           # clean the dictionary to remove globals due to "exec" funcionality
-           nuisances = {k: v for k, v in nuisances.items() if not (k.startswith('__') and k.endswith('__'))}
+         with open(year_samples, 'r') as f_samples:
+           handle_samples = f_samples.read()
+         with open(year_nuisances, 'r') as f_nuisances:
+           handle_nuisances = f_nuisances.read()
+
+         handle_unique = handle_samples + "\n# --- End of Samples / Start of Nuisances ---\n" + handle_nuisances
+
+         exec_context = {'os': os,
+                         'samples': {},
+                         'nuisances': {}
+                        }
+         # exec_context = globals().copy() # FIXME not 100% sure about handling of global variables, e.g. treeBaseDir ... the same in all years? Will this work?
+         exec(handle_unique, exec_context)
+         nuisances = exec_context.get('nuisances', {})
+         nuisances = {k: v for k, v in nuisances.items() if not (k.startswith('__') and k.endswith('__'))}
 
          all_nuisances[folderHR] = nuisances
 
@@ -239,6 +236,8 @@ class MergerFactory:
 
        rootFileNew.cd()
 
+       print (" new_list_of_nuisances = ", new_list_of_nuisances)
+
        # loop over cuts
        for cutName in cuts :
          # loop over variables
@@ -275,7 +274,7 @@ class MergerFactory:
 
                  for folderHR, folder in foldersToMerge.items():
 
-                   print ("folderHR = ", cutName, " :: ", nuisanceName, "::", folderHR)
+                   # print ("folderHR = ", cutName, " :: ", nuisanceName, "::", folderHR)
 
                    #
                    # If the histogram up and down are present in the input root files, add the histograms up/down
@@ -288,7 +287,7 @@ class MergerFactory:
                      histos_up_to_be_summed_weights.append ( 1.0 )
                      histos_down_to_be_summed_weights.append ( 1.0 )
 
-                     print ("     --->>>>>>>>>>>>>>> added = ", nameTempUp)
+                     # print ("     --->>>>>>>>>>>>>>> added = ", nameTempUp)
 
                    else :
                      #
@@ -302,8 +301,10 @@ class MergerFactory:
 
                      # print ("     not added?  ", nameTempUp)
 
+                     # print ("     Check:", nuisanceName, " in all_nuisances[",folderHR, "] = ", all_nuisances[folderHR])
+
                      if nuisanceName in all_nuisances[folderHR].keys() :
-                       print ("     I should add the nuisance, that was -->", all_nuisances[folderHR][nuisanceName]['type'], " and was the sample ", sampleName, "  there? ", sampleName in all_nuisances[folderHR][nuisanceName]['samples'].keys())
+                       # print ("     I should add the nuisance, that was -->", all_nuisances[folderHR][nuisanceName]['type'], " and was the sample ", sampleName, "  there? ", sampleName in all_nuisances[folderHR][nuisanceName]['samples'].keys())
 
                        if all_nuisances[folderHR][nuisanceName]['type'] == 'lnN' and  sampleName in all_nuisances[folderHR][nuisanceName]['samples'].keys() :
                          #
@@ -311,7 +312,6 @@ class MergerFactory:
                          #    the up/down could be given separately:   '1.03/0.99'
                          #    or unique :                              '1.02'
                          #
-                         print ("     ONE")
                          histos_up_to_be_summed.append  ( histograms[folderHR][folder_name][nameTemp] )
                          histos_down_to_be_summed.append( histograms[folderHR][folder_name][nameTemp] )
                          if "/" not in all_nuisances[folderHR][nuisanceName]['samples'][sampleName]:
@@ -323,7 +323,7 @@ class MergerFactory:
                            histos_down_to_be_summed_weights.append ( val_down )
 
                      else:
-                       print ("     NOOOOOO")
+                       # print ("     nuisanceName[", nuisanceName, "] is not in the list of nuisances to be used in the summed version")
                        histos_up_to_be_summed.append  ( histograms[folderHR][folder_name][nameTemp] )
                        histos_down_to_be_summed.append( histograms[folderHR][folder_name][nameTemp] )
                        histos_up_to_be_summed_weights.append   ( 1.0 )
@@ -333,7 +333,9 @@ class MergerFactory:
                  #
                  # if the nuisance has NO effect on a sample, the histograms are not even created, thus it's not possible to merge them
                  #
-                 if len(histos_up_to_be_summed) >= 1:
+                 # if len(histos_up_to_be_summed) >= 1:
+                 if len(histos_up_to_be_summed) >= 1 and sampleName != "DATA": # FIXME hardcoded 'DATA'
+                   print ("nuisanceName to be written:", nuisanceName, "for sample: ", sampleName, " cut: ", cutName, " variable: ", variableName)
                    summed_up_histo = histos_up_to_be_summed[0].Clone()
                    summed_up_histo.Scale(histos_up_to_be_summed_weights[0])
                    ihh = 0
