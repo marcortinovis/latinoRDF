@@ -75,8 +75,9 @@ class MergerFactory:
         samples,
         nuisances,
         foldersToMerge,
-        foldersToMergeNuisancesFiles
-    ):
+        foldersToMergeNuisancesFiles,
+        inPath
+   ):
 
 
        #
@@ -153,7 +154,7 @@ class MergerFactory:
        #
        # get all the root files with the histograms from the different years
        #
-       new_root_file_name = "histos_"     + tag + ".root"
+       new_root_file_name = inPath+'Run2/'+"histos_"     + tag + ".root"
        # print (" new_root_file_name = ", new_root_file_name)
        rootFileNew = ROOT.TFile.Open( new_root_file_name, "RECREATE")
 
@@ -163,10 +164,11 @@ class MergerFactory:
          # copy the default root file for bookkeeping
 
          # root_file_joined.root FIXME
-         old_root_file_name = folder["folder"] + "/" + "rootFile" + "/root_file_joined.root"
+         old_root_file_name = inPath + folder["folder"][3:] + "/" + "rootFile" + "/root_file_joined.root" ##### mcortino
          # old_root_file_name = folder["folder"] + "/" + "rootFile" + "/mkShapes__" + folder["tag"] + ".root"
          new_root_file_name = "year_" + folderHR + "_histos_" + folder["tag"] + ".root"
          os.system ("cp " + old_root_file_name + "   " + new_root_file_name )
+         print(new_root_file_name) ## mcortino debug
          rootFile    = ROOT.TFile.Open( new_root_file_name, "READ")
 
          #
@@ -397,6 +399,7 @@ if __name__ == '__main__':
     print ("opt.structureFile    = ", opt.structureFile)
     print ("opt.nuisancesFile    = ", opt.nuisancesFile)
     print ("opt.foldersToMerge   = ", opt.foldersToMerge)
+    print ("opt.inPath		 = ", opt.inPath)
 
     #
     # since the tricky part is the handling of the nuisances
@@ -478,6 +481,7 @@ if __name__ == '__main__':
        nuisances,
        opt.foldersToMerge,
        foldersToMergeNuisancesFiles,
+       opt.inPath,
        )
 
 

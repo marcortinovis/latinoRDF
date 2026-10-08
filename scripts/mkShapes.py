@@ -1176,8 +1176,8 @@ int main() {{
         std::string this_cutName = cut_label.substr(0, pos_triple);
         std::string rest = cut_label.substr(pos_triple + 3);
         std::string sampleName = "{sampleName}";
-        size_t pos = cut_label.find(sampleName);
-        sub_name = cut_label.substr(pos + sampleName.length() + 1);
+        size_t pos = rest.find(sampleName); // mcortino debug // size_t pos = cut_label.find(sampleName);
+        sub_name = rest.substr(pos + sampleName.length() + 1); // mcortino debug // sub_name = cut_label.substr(pos + sampleName.length() + 1);
         current_cut = this_cutName;
       }}
 
@@ -1408,6 +1408,7 @@ int main() {{
         self._outputDir = outputDir
         self._lumi      = lumi
 
+
     # _____________________________________________________________________________
     def setConditions(self, silentMode):
 
@@ -1421,11 +1422,11 @@ int main() {{
         print ("==== makeNominals ====")
         print ("======================")
 
-        os.system ("mkdir " + self._outputDir + "/")
+        os.system ("mkdir -p " + self._outputDir) ## mco debug
 
         ROOT.TH1.SetDefaultSumw2(True)
 
-        os.system ("mkdir " + self._scripts_run_folder + "/")
+        os.system ("mkdir -p " + self._scripts_run_folder)
 
         #
         # create the header and cpp code for the library with useful functions
@@ -1440,7 +1441,7 @@ int main() {{
         # Loop over samples
         #
         for sampleName, sample in self._samples.items():
-          os.system ("mkdir " + self._scripts_run_folder + "/" + sampleName + "/")
+          os.system ("mkdir -p " + self._scripts_run_folder + "/" + sampleName + "/")
           #
           # create an executable for each file in each sample
           #
@@ -1484,7 +1485,7 @@ int main() {{
 
           for subname, list_root_files in sample['name'].items():
             print ("length of list_root_files = ", len(list_root_files))
-            os.system ("mkdir " + self._scripts_run_folder + "/" + sampleName + "/" + subname + "/")
+            os.system ("mkdir -p " + self._scripts_run_folder + "/" + sampleName + "/" + subname + "/")
 
             # if weights per subname are listed, use them
             # e.g. per PD weights in data
@@ -1585,7 +1586,7 @@ int main() {{
                   if line_count > 6: # should I remove the warnings to have 0? FIXME
                     list_jobs_with_error.append(name_err_file)
               output_root_file_name = "root_file___" + sampleName + "_" + subname + "_" + str(i) + ".root"
-              root_file_name = f"{submission_dir}/{self._outputDir}/{output_root_file_name}"
+              root_file_name = f"{self._outputDir}/{output_root_file_name}" ## f"{submission_dir}/{self._outputDir}/{output_root_file_name}"
               if os.path.exists(root_file_name):
                 pass
               else :
@@ -1615,8 +1616,8 @@ int main() {{
         print ("==== compile on batch ====")
         print ("==========================")
 
-        where_compile = "parallel_compile"
-        os.system ("mkdir " + where_compile + "/")
+        where_compile = "parallel_compile/"
+        os.system ("mkdir -p " + where_compile)
 
         submission_dir = os.getcwd()
 
@@ -1670,7 +1671,7 @@ queue
         print ("==== submit Batch ====")
         print ("======================")
 
-        os.system ("mkdir " + self._script_batch_location + "/")
+        os.system ("mkdir -p " + self._script_batch_location + "/")
 
         submission_dir = os.getcwd()
 
@@ -1678,10 +1679,10 @@ queue
         # Loop over samples
         #
         for sampleName, sample in self._samples.items():
-          os.system ("mkdir " + self._script_batch_location + "/" + sampleName + "/")
+          os.system ("mkdir -p " + self._script_batch_location + "/" + sampleName + "/")
 
           for subname, list_root_files in sample['name'].items():
-            os.system ("mkdir " + self._script_batch_location + "/" + sampleName + "/" + subname + "/")
+            os.system ("mkdir -p " + self._script_batch_location + "/" + sampleName + "/" + subname + "/")
 
             make_job_every_N = 1
             if "FilesPerJob" in sample.keys():
@@ -1702,18 +1703,20 @@ queue
 set -e  # Exit on error
 echo "Job started at $(date)"
 echo "Running on node $(hostname)"
-mkdir {self._outputDir}
-mkdir {sampleName}/
-mkdir {sampleName}/{subname}/
+mkdir -p {self._outputDir}
+mkdir -p {sampleName}/
+mkdir -p {sampleName}/{subname}/
 mv {name_code_no_folder} {sampleName}/{subname}/
 ./{sampleName}/{subname}/{name_code_no_folder}
-cp {self._outputDir}/{output_root_file_name}  {submission_dir}/{self._outputDir}/
+
 
 echo "Current directory content after running:"
 ls -lh
 echo "Current full path: $(pwd)"
 
 """
+## after move ./scripts_batch//DATA/EGamma1_Run2023C-Prompt-v4/log/my_script_13.sh.err
+
 
               with open(f"{name_bash}", "w") as f:
                 f.write(bash_code)
@@ -1801,7 +1804,6 @@ if __name__ == '__main__':
     print ("opt.nuisancesFile    = ", opt.nuisancesFile)
     print ("opt.lumi             = ", opt.lumi)
     print ("opt.outputDir        = ", opt.outputDir)
-
 
     print ("opt.parallelCompile  = ", opt.parallelCompile)
     print ("opt.localCompile     = ", opt.localCompile)

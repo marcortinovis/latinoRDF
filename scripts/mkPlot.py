@@ -263,7 +263,7 @@ class PlotFactory:
 
         self.defineStyle()
 
-        os.system ("mkdir " + self._outputDirPlots + "/")
+        os.system ("mkdir -p " + self._outputDirPlots) ### -p needed to write to eos
 
         #
         # prepare index.php
@@ -450,9 +450,14 @@ class PlotFactory:
                 print ('     -> shapeName = ', shapeName)
               if type(fileIn) is dict:
                 histo = fileIn[sampleName].Get(shapeName)
+                print('it was a dict')
               else:
                 histo = fileIn.Get(shapeName)
-              if not histo: continue
+                print('it was not a dict')
+              if not histo:
+                print('inputFile: ', inputFile, '   fileIn: ', type(fileIn), fileIn, '   shapeName: ', shapeName, '   histo: ', type(histo), histo)
+                print('no histo +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++') ## mcortino debug
+                continue
               if not self._silentMode:
                 print (' --> ', histo)
                 print ('new_histo_' + sampleName + '_' + cutName + '_' + variableName)
@@ -679,7 +684,8 @@ class PlotFactory:
                   for nuisanceName, nuisance in mynuisances.items():
                     try:
                       histoVar = nuisanceHistos[ivar][nuisanceName]
-                      test = np.asarray(histoVar)[1:-1] # FIXME check if ok like this ...
+                      print(nuisanceName, type(histoVar), histoVar.ClassName() if histoVar else "null pointer", bool(histoVar)) ## mc debug
+                      ## mco debug test = np.asarray(histoVar)[1:-1] # FIXME check if ok like this ...
                     except KeyError:
                       # now, even if not considered this nuisance, I need to add it,
                       # so that in case is "empty" it will add the nominal value
@@ -714,12 +720,14 @@ class PlotFactory:
               # create the group of histograms to plot
               # this has to be done after the scaling of the previous lines
               # andl also after all the rest, so that we inherit the style of the histograms
+              print('sampleName', sampleName, 'groupPlot', groupPlot, 'histos_grouped', histos_grouped, '-+-++-+-+-+-+-+-+-+-+-++-+-+--++-+-+-+-+-+-+-++-+-+-+--+-++-+-+-+-+-+-')  ## mc debug
               for sampleNameGroup, sampleConfiguration in groupPlot.items():
                 if sampleName in sampleConfiguration['samples']:
                   if sampleNameGroup in histos_grouped.keys() :
                     histos_grouped[sampleNameGroup].Add(histos[sampleName])
                   else :
                     histos_grouped[sampleNameGroup] = histos[sampleName].Clone('new_histo_group_' + sampleNameGroup + '_' + cutName + '_' + variableName)
+              print('histos_grouped', histos_grouped, 'cutName', cutName, 'variableName', variableName, '--+-+-+-+-+-+-++-+--++-+-+-+-+-+--+-+-+-+-+-+-++-+--++-+-+-+-+-+-+-+--+') ## mc debug
 
             # end sample loop
 
@@ -1036,6 +1044,7 @@ class PlotFactory:
               # the signal has to be the last one in the dictionary!
               # make it sure in plot.py
               if groupFlag == False:
+                  print(sampleNameGroup, histos_grouped) ## mc debug
                   thsBackground_grouped.Add(histos_grouped[sampleNameGroup])
 
             #---- now plot
@@ -3075,10 +3084,13 @@ if __name__ == '__main__':
       if subsamples:
         for sub_name, sub_config in subsamples.items():
           new_key = f"{sample_name}_{sub_name}"
-          samples[new_key] = {}
+          samples[new_key] = samples[sample_name] | sub_config ## mc debug
+          samples[new_key].pop("subsamples", None) ## mc debug
+
 
 
     # print ("samples = ", samples)
+    print("samples keys = ", list(samples.keys()))
 
     #
     # read list of variables
@@ -3140,8 +3152,6 @@ if __name__ == '__main__':
     print ("plot =      ", plot)
     print ("groupPlot = ", groupPlot)
     print ("legend =    ", legend)
-
-
 
     #
     # the format is defined in mkShaper.py
