@@ -590,7 +590,6 @@ int main() {{
             _, _, aliases_ordered = self._build_aliases_ordered(sampleName)
 
             for subname, list_root_files in self._normalize_sample_name(sample['name']).items():
-                print(f"  {sampleName}/{subname}: {len(list_root_files)} files")
                 os.makedirs(self._scripts_run_folder + "/" + sampleName + "/" + subname, exist_ok=True)
 
                 weight = (f"({global_weight}) * ({weights_subname[subname]})"

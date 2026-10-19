@@ -175,7 +175,7 @@ class DatacardFactory:
         print ("Number of Backgrounds:         " + str(len(background_ids))          )
 
         if not os.path.isdir(self._outputDirDatacard + "/") :
-          os.mkdir(self._outputDirDatacard + "/")
+          os.makedirs(self._outputDirDatacard + "/", exist_ok=True)
 
         # loop over cuts. One directory per cut will be created
         for cutName in self._cuts:
@@ -184,7 +184,7 @@ class DatacardFactory:
             shutil.rmtree(self._outputDirDatacard + "/" + cutName)
           except OSError:
             pass
-          os.mkdir(self._outputDirDatacard + "/" + cutName)
+          os.makedirs(self._outputDirDatacard + "/" + cutName, exist_ok=True)
 
           #
           # prepare the signals and background list of samples
@@ -212,8 +212,8 @@ class DatacardFactory:
             # e.g.    hww2l2v_13TeV_of0j
             #         to be defined in cuts.py
 
-            os.mkdir(self._outputDirDatacard + "/" + cutName + "/" + variableName)
-            os.mkdir(self._outputDirDatacard + "/" + cutName + "/" + variableName + "/shapes/") # and the folder for the root files
+            os.makedirs(self._outputDirDatacard + "/" + cutName + "/" + variableName, exist_ok=True)
+            os.makedirs(self._outputDirDatacard + "/" + cutName + "/" + variableName + "/shapes/", exist_ok=True) # and the folder for the root files
 
             self._outFile = ROOT.TFile.Open(self._outputDirDatacard + "/" + cutName + "/" + variableName + "/shapes/histos_" + tagNameToAppearInDatacard + ".root", 'recreate')
             ROOT.gROOT.GetListOfFiles().Remove(self._outFile)
@@ -228,8 +228,14 @@ class DatacardFactory:
             #killBinBkg = {}
 
             for snameList, yields in [(cut_signals, yieldsSig), (cut_backgrounds, yieldsBkg), (data, yieldsData)]:
+              #print(snameList) ####
               for sampleName in snameList:
                 histo = self._getHisto(cutName, variableName, sampleName)
+                ### mcortino
+                #print(type(histo))
+                #print(histo.ClassName() if histo else "histo is None")
+                #print(histo.GetName() if histo else "histo is None")
+                ###
                 histo.SetDirectory(self._outFile)
 
                 # get the integral == rate from histogram
@@ -753,9 +759,15 @@ class DatacardFactory:
             histo = self._fileIn[sampleName].Get(shapeName)
         else:
             # Merged single ROOT file
+            ### mco
+            #print([key.GetName() for key in self._fileIn.GetListOfKeys()])
+            #print([key.GetName() for key in self._fileIn['WZ_SR']['events'].GetListOfKeys()], shapeName)
+            ###
             histo = self._fileIn.Get(shapeName)
 
         if not histo:
+            #print(self._fileIn)
+            #print(self._fileIn[sampleName]) ### mco
             print (shapeName, 'not found')
 
         return histo

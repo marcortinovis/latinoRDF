@@ -263,7 +263,7 @@ class PlotFactory:
 
         self.defineStyle()
 
-        os.system ("mkdir " + self._outputDirPlots + "/")
+        os.system ("mkdir -p " + self._outputDirPlots + "/")
 
         #
         # prepare index.php
