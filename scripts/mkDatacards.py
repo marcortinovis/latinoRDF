@@ -156,19 +156,20 @@ class DatacardFactory:
         # divide the list of samples among signal, background and data
         isig = 0
         ibkg = 1
-        for sampleName in self._samples:
-          if self._structure[sampleName]['isSignal'] != 0:
-            signal_ids[sampleName] = isig
-            isig -= 1
-          if self._structure[sampleName]['isSignal'] == 2 :
-            alternative_signals.append(sampleName)
-          if self._structure[sampleName]['isSignal'] == 1 :
-            cumulative_signals.append(sampleName)
-          if self._structure[sampleName]['isData'] == 1 :
-            data.append(sampleName)
-          if self._structure[sampleName]['isSignal'] == 0 and self._structure[sampleName]['isData'] == 0:
-            background_ids[sampleName] = ibkg
-            ibkg += 1
+        for sampleName in self._structure: ### mcortino: I want to use only the samples I put in structures!
+          if sampleName in self._samples:
+            if self._structure[sampleName]['isSignal'] != 0:
+              signal_ids[sampleName] = isig
+              isig -= 1
+            if self._structure[sampleName]['isSignal'] == 2 :
+              alternative_signals.append(sampleName)
+            if self._structure[sampleName]['isSignal'] == 1 :
+              cumulative_signals.append(sampleName)
+            if self._structure[sampleName]['isData'] == 1 :
+              data.append(sampleName)
+            if self._structure[sampleName]['isSignal'] == 0 and self._structure[sampleName]['isData'] == 0:
+              background_ids[sampleName] = ibkg
+              ibkg += 1
 
         print ("Number of Signals:             " + str(len(signal_ids))              )
         print ("Number of Alternative Signals: " + str(len(alternative_signals) - 1) )
@@ -746,10 +747,16 @@ class DatacardFactory:
             histoUp.SetName('histo_%s%sUp' % (sampleName, suffixOut))      # Up         ### mcortino: changed up to Up
             histoDown.SetName('histo_%s%sDown' % (sampleName, suffixOut))  # Down        ### mcortino: changed do to Down
 
+        ### mcortino: these suffixes mess with combine
+        if histoUp.GetName()[-2:] == 'up':
+          histoUp.SetName(histoUp.GetName()[:-2]+'Up')
+        if histoDown.GetName()[-2:] == 'do':
+          histoDown.SetName(histoDown.GetName()[:-2]+'Down')
+        ###
+
         self._outFile.cd()
         histoUp.Write()
         histoDown.Write()
-
         return True
 
     # _____________________________________________________________________________
