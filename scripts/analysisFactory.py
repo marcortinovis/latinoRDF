@@ -575,7 +575,7 @@ class AnalysisFactory:
 
         # ---- weights ----
         define_weights = f"//  weights needed\n"
-        define_weights += f'    varied_df = SafeDefine(varied_df, "my_sample_weight", "{weight}");\n'
+        define_weights += f'    varied_df = SafeDefine(varied_df, "my_sample_weight", "static_cast<double>({weight})");\n' ### mcortino: added the static cast to double
 
         # ---- aliases + functions in order ----
         code_of_function_to_include = ""
@@ -876,7 +876,7 @@ class AnalysisFactory:
             "transfer_output_files   = \n"
             f"transfer_input_files    = $(job_exe), {fixed_extra}\n"
             "getenv                  = True\n"
-            "+JobFlavour             = \"longlunch\"\n\n"
+            "+JobFlavour             = \"workday\"\n\n" ### mcortino: before it was \"longlunch\"\n\n"
             "queue executable, job_exe, output, error, log from (\n"
             + queue_lines + "\n)\n"
         )

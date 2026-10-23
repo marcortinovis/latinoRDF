@@ -80,7 +80,7 @@ class DatacardFactory:
 
 
     # _____________________________________________________________________________
-    def setValues(self, inputFile, outputDirDatacard, variables, cuts, samples, nuisances, structure):
+    def setValues(self, inputFile, outputDirDatacard, variables, cuts, samples, nuisances, structure, _skipMissingNuisance=False): ### mcortino: added skipmissingnuisance
 
         self._inputFile         = inputFile
         self._variables         = variables
@@ -89,6 +89,7 @@ class DatacardFactory:
         self._nuisances         = nuisances
         self._outputDirDatacard = outputDirDatacard
         self._structure         = structure
+        self._skipMissingNuisance = _skipMissingNuisance
 
 
         # expand "cuts" including categories
@@ -707,11 +708,14 @@ class DatacardFactory:
         histoUp = self._getHisto(cutName, variableName, sampleName, suffixIn + 'up')     # Up
         histoDown = self._getHisto(cutName, variableName, sampleName, suffixIn + 'do') # Down
 
+        #print(histoUp, cutName, variableName, sampleName, suffixIn + 'up') ### mcortino debugging
+
         if not histoUp or not histoDown:
           print ('Up/down histogram for', cutName, variableName, sampleName, suffixIn, 'missing')
           if self._skipMissingNuisance:
             return False
           # else let ROOT raise
+        #print(sampleName) ### mcortino
         if 'scaleSampleForDatacard' in structure[sampleName]:
           scaleFactor = 1.
           if type(structure[sampleName]['scaleSampleForDatacard']) is dict:
@@ -739,8 +743,8 @@ class DatacardFactory:
         histoUp.SetDirectory(self._outFile)
         histoDown.SetDirectory(self._outFile)
         if suffixOut:
-            histoUp.SetName('histo_%s%sup' % (sampleName, suffixOut))      # Up
-            histoDown.SetName('histo_%s%sdo' % (sampleName, suffixOut))  # Down
+            histoUp.SetName('histo_%s%sUp' % (sampleName, suffixOut))      # Up         ### mcortino: changed up to Up
+            histoDown.SetName('histo_%s%sDown' % (sampleName, suffixOut))  # Down        ### mcortino: changed do to Down
 
         self._outFile.cd()
         histoUp.Write()
@@ -804,6 +808,7 @@ if __name__ == '__main__':
     parser.add_argument("--silentMode", action='store_true', dest="silentMode",    help="Remove as much as possible the print and the log/err files production")
     parser.add_argument('--sigset'             , dest='sigset'            , help='Signal samples [SM]'                        , default='SM')
     parser.add_argument('--inputFile'          , dest='inputFile'         , help='input directory'                            , default='./input.root')
+    parser.add_argument('--inputJoinedRoot'    , default='root_file_joined.root') ### mcortino
     parser.add_argument('--skipMissingNuisance', dest='skipMissingNuisance', help="Don't write nuisance lines when histograms are missing", default=False, action='store_true')
 
 
@@ -918,12 +923,12 @@ if __name__ == '__main__':
     # the format is defined in mkShaper.py
     # FIXME: add it as configurable ...
     #
-    inputFile = opt.outputDir +"/root_file_joined.root"
+    inputFile = opt.outputDir + "/" + opt.inputJoinedRoot ### mcortino
 
 
     factory = DatacardFactory()
 
-    factory.setValues(inputFile, opt.outputDirDatacard, variables, cuts, samples, nuisances, structure)
+    factory.setValues(inputFile, opt.outputDirDatacard, variables, cuts, samples, nuisances, structure, opt.skipMissingNuisance) ### mcortino: added skipmissingnuisance
     # factory.setConditions (opt.silentMode)
     factory.setConditions (
                            opt.silentMode,
