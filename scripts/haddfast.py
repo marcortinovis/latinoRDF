@@ -115,7 +115,6 @@ def writeto(sourcePaths, targetPath, eosDownload=False):
             for _ in range(5):
                 with tempfile.NamedTemporaryFile(suffix='.root', delete=False) as tmp:
                     tmpname = tmp.name
-                #proc = subprocess.Popen(['xrdcp', '-f', pathReal, tmpname]) ### mcortino: it was proc = subprocess.Popen(['xrdcp', '-f', 'root://eoscms.cern.ch/' + pathReal, tmpname]), is this ok??
                 proc = subprocess.Popen(['xrdcp', '-f', 'root://eoscms.cern.ch/' + pathReal, tmpname])
                 proc.communicate()
                 if proc.returncode == 0:
