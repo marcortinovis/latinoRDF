@@ -230,7 +230,6 @@ class DatacardFactory:
             #killBinBkg = {}
 
             for snameList, yields in [(cut_signals, yieldsSig), (cut_backgrounds, yieldsBkg), (data, yieldsData)]:
-              #print(snameList) ####
               for sampleName in snameList:
                 histo = self._getHisto(cutName, variableName, sampleName)
                 histo.SetDirectory(self._outFile)
@@ -763,15 +762,9 @@ class DatacardFactory:
             histo = self._fileIn[sampleName].Get(shapeName)
         else:
             # Merged single ROOT file
-            ### mco
-            #print([key.GetName() for key in self._fileIn.GetListOfKeys()])
-            #print([key.GetName() for key in self._fileIn['WZ_SR']['events'].GetListOfKeys()], shapeName)
-            ###
             histo = self._fileIn.Get(shapeName)
 
         if not histo:
-            #print(self._fileIn)
-            #print(self._fileIn[sampleName]) ### mco
             print (shapeName, 'not found')
 
         return histo
