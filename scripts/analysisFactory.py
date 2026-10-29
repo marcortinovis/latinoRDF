@@ -876,7 +876,8 @@ class AnalysisFactory:
             "transfer_output_files   = \n"
             f"transfer_input_files    = $(job_exe), {fixed_extra}\n"
             "getenv                  = True\n"
-            "+JobFlavour             = \"workday\"\n\n" ### mcortino: before it was \"longlunch\"\n\n"
+            "+JobFlavour             = \"tomorrow\"\n" ### mcortino: before it was \"longlunch\"\n\n", workday
+            "request_memory          = 6144\n\n" ### mcortino: a job (my_run_analysis_WgS_WGtoLNuG-1J_3) was held after asking for more memory than limit (3000), about 5.7
             "queue executable, job_exe, output, error, log from (\n"
             + queue_lines + "\n)\n"
         )
@@ -1132,8 +1133,10 @@ class AnalysisFactory:
         # resolve absolute output_dir
         if not os.path.isabs(output_dir):
             output_dir = os.path.join(submission_dir, output_dir)
+        output_dir = os.path.realpath(output_dir)   # <-- NEW: follow AFS -> EOS symlink ### mcortino
         output_dir_normalized = _re.sub(r'^/eos/home-([a-z])/',
                                          lambda m: f"/eos/user/{m.group(1)}/", output_dir)
+
 
         # driven by samples.py, never by whatever is in output_dir. Files from
         # a previous configuration carry the same histogram folder and
@@ -1208,6 +1211,7 @@ error                   = {self._script_batch_location}/hadd_{tag}.err
 log                     = {self._script_batch_location}/hadd_{tag}.log
 getenv                  = True
 +JobFlavour             = "workday"
+request_memory          = 20480
 queue
 """
         with open(hadd_sub_path, "w") as f:

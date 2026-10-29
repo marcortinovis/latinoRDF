@@ -678,7 +678,8 @@ class DatacardFactory:
                 if len(nuisance['samples']) != 1:
                   raise RuntimeError('Invalid rateParam: number of samples != 1')
 
-                sampleName, initialValue = nuisance['samples'].items()[0]   # FIXME
+                ###sampleName, initialValue = nuisance['samples'].items()[0]   # FIXME
+                sampleName, initialValue = next(iter(nuisance['samples'].items())) ### mcortino
                 if sampleName not in samples:
                   raise RuntimeError('Invalid rateParam: unknown sample %s' % sampleName)
 

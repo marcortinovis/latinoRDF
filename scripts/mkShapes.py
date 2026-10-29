@@ -9,6 +9,18 @@ import subprocess
 import logging
 import ROOT
 
+import re ### mcortino: ps weight update
+PS_WEIGHT_HELPER = r'''
+#include <type_traits>
+#include <cstddef>
+template <typename T>
+double ps_weight_at(const T& w, std::size_t i) {
+    if constexpr (std::is_arithmetic_v<T>) return 1.;                 // fixed [1] array seen as a scalar
+    else return w.size() > i ? static_cast<double>(w[i]) : 1.;        // real array
+}
+'''
+
+
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from analysisFactory import (AnalysisFactory, defaultParser, loadDefaultOptions,
                              read_exec, load_config_files, _SCRIPTS_DIR)
@@ -201,6 +213,15 @@ std::vector<std::string> getBranchNames(TTree* tree) {
                     out += f'        }};\n      }};\n    }};\n\n'
         return out
 
+
+    @staticmethod ### mcortino: ps weight update
+    def _ps_safe(expr):
+        # PSWeight[N] does not compile when the branch is a fixed [1] array (seen as a scalar)
+        return re.sub(r'\bPSWeight\[(\d+)\]', r'ps_weight_at(PSWeight,\1)', expr)
+
+
+
+
     def _build_cpp_variations_weights(self, sampleName, weight):
         out = "//  Register the variations\n"
         for nuisanceName, nuisance in self._nuisances.items():
@@ -209,12 +230,12 @@ std::vector<std::string> getBranchNames(TTree* tree) {
                 samples_entry = nuisance['samples'][sampleName]
                 if len(samples_entry) == 3:
                     if samples_entry[0] in weight:
-                        var_up = weight.replace(samples_entry[0], samples_entry[1])
-                        var_do = weight.replace(samples_entry[0], samples_entry[2])
+                        var_up = self._ps_safe(weight.replace(samples_entry[0], samples_entry[1])) ### mcortino: ps weight update
+                        var_do = self._ps_safe(weight.replace(samples_entry[0], samples_entry[2])) ### mcortino: ps weight update
                         out += f'    varied_df = varied_df.Vary("my_sample_weight", "ROOT::RVecD{{{var_up},{var_do}}}", {{"up", "do"}}, "{nuisance["name"]}");\n'
                 else:
-                    var_up = f"(my_sample_weight) * {samples_entry[0]}"
-                    var_do = f"(my_sample_weight) * {samples_entry[1]}"
+                    var_up = self._ps_safe(f"(my_sample_weight) * {samples_entry[0]}") ### mcortino: ps weight update
+                    var_do = self._ps_safe(f"(my_sample_weight) * {samples_entry[1]}") ### mcortino: ps weight update
                     out += f'    varied_df = varied_df.Vary("my_sample_weight", "ROOT::RVecD{{{var_up},{var_do}}}", {{"up", "do"}}, "{nuisance["name"]}");\n'
         return out
 
@@ -371,6 +392,7 @@ std::vector<std::string> getBranchNames(TTree* tree) {
 #include "TH1D.h"
 #include "TDirectory.h"
 #include "TChain.h"
+#include "TInterpreter.h" ////// mcortino: ps weight update
 #include <map>
 #include <vector>
 #include <string>
@@ -389,6 +411,8 @@ std::vector<std::string> getBranchNames(TTree* tree) {
 
 int main() {{
     ROOT::DisableImplicitMT();
+
+    gInterpreter->Declare(R"CPP({PS_WEIGHT_HELPER})CPP"); ////// mcortino: added TInterpreter, ps weight update
 
     {frags['lines_to_process']}
 
