@@ -233,11 +233,6 @@ class DatacardFactory:
               #print(snameList) ####
               for sampleName in snameList:
                 histo = self._getHisto(cutName, variableName, sampleName)
-                ### mcortino
-                #print(type(histo))
-                #print(histo.ClassName() if histo else "histo is None")
-                #print(histo.GetName() if histo else "histo is None")
-                ###
                 histo.SetDirectory(self._outFile)
 
                 # get the integral == rate from histogram
@@ -710,14 +705,11 @@ class DatacardFactory:
         histoUp = self._getHisto(cutName, variableName, sampleName, suffixIn + 'up')     # Up
         histoDown = self._getHisto(cutName, variableName, sampleName, suffixIn + 'do') # Down
 
-        #print(histoUp, cutName, variableName, sampleName, suffixIn + 'up') ### mcortino debugging
-
         if not histoUp or not histoDown:
           print ('Up/down histogram for', cutName, variableName, sampleName, suffixIn, 'missing')
           if self._skipMissingNuisance:
             return False
           # else let ROOT raise
-        #print(sampleName) ### mcortino
         if 'scaleSampleForDatacard' in structure[sampleName]:
           scaleFactor = 1.
           if type(structure[sampleName]['scaleSampleForDatacard']) is dict:

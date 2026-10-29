@@ -777,6 +777,7 @@ if __name__ == '__main__':
         scripts_run_folder    = getattr(opt, 'scripts_run_folder',    None),
         script_batch_location = getattr(opt, 'script_batch_location', None),
         extra_transfer_files  = getattr(opt, 'extra_transfer_files',  None),
+        jobs_config           = getattr(opt, 'jobs_config',           None)
     )
     factory.setConditions(opt.silentMode)
 
