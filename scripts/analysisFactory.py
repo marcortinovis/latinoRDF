@@ -1045,12 +1045,6 @@ class AnalysisFactory:
         with open(submit_all_path, 'r') as f:
             all_lines = f.readlines()
 
-        # header_lines = []
-        # for line in all_lines:
-        #     header_lines.append(line)
-        #     if line.strip().startswith("queue executable"):
-        #         break
-
         ### updated cycle: if --resubmit is called after jobs_config has changed, the submit file is updated
         header_lines = []
         for line in all_lines:
