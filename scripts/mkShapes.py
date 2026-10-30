@@ -9,21 +9,14 @@ import subprocess
 import logging
 import ROOT
 
-import re ### mcortino: ps weight update
-PS_WEIGHT_HELPER = r'''
-#include <type_traits>
-#include <cstddef>
-template <typename T>
-double ps_weight_at(const T& w, std::size_t i) {
-    if constexpr (std::is_arithmetic_v<T>) return 1.;                 // fixed [1] array seen as a scalar
-    else return w.size() > i ? static_cast<double>(w[i]) : 1.;        // real array
-}
-'''
-
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from analysisFactory import (AnalysisFactory, defaultParser, loadDefaultOptions,
                              read_exec, load_config_files, _SCRIPTS_DIR)
+
+# Variation tags used by RDataFrame Vary(): they end up as suffixes of the histogram names
+# and must match what combine expects ($SYSTEMATIC -> <nuisance>Up / <nuisance>Down).
+TAG_UP, TAG_DOWN = 'Up', 'Down'
 
 
 # -----------------------------------------------------------------------
@@ -199,7 +192,7 @@ std::vector<std::string> getBranchNames(TTree* tree) {
                 if first_time_suffix == 0:
                     out += '    int suffix_size = 0;\n'
                     first_time_suffix = 1
-                for (mapName, direction) in [(nuisance['mapUp'], '"up"'), (nuisance['mapDown'], '"do"')]:
+                for (mapName, direction) in [(nuisance['mapUp'], f'"{TAG_UP}"'), (nuisance['mapDown'], f'"{TAG_DOWN}"')]:
                     out += f'    suffix_size = {len(mapName) + 1};\n'
                     out += f'    for (const auto& branch : varBranches_{mapName}) {{\n'
                     out += f'      if (int(branch.size()) >= (suffix_size-1) && branch.compare(branch.size() - (suffix_size-1), (suffix_size-1), "{mapName}") == 0 ) {{\n'
@@ -214,14 +207,6 @@ std::vector<std::string> getBranchNames(TTree* tree) {
         return out
 
 
-    @staticmethod ### mcortino: ps weight update
-    def _ps_safe(expr):
-        # PSWeight[N] does not compile when the branch is a fixed [1] array (seen as a scalar)
-        return re.sub(r'\bPSWeight\[(\d+)\]', r'ps_weight_at(PSWeight,\1)', expr)
-
-
-
-
     def _build_cpp_variations_weights(self, sampleName, weight):
         out = "//  Register the variations\n"
         for nuisanceName, nuisance in self._nuisances.items():
@@ -230,13 +215,13 @@ std::vector<std::string> getBranchNames(TTree* tree) {
                 samples_entry = nuisance['samples'][sampleName]
                 if len(samples_entry) == 3:
                     if samples_entry[0] in weight:
-                        var_up = self._ps_safe(weight.replace(samples_entry[0], samples_entry[1])) ### mcortino: ps weight update
-                        var_do = self._ps_safe(weight.replace(samples_entry[0], samples_entry[2])) ### mcortino: ps weight update
-                        out += f'    varied_df = varied_df.Vary("my_sample_weight", "ROOT::RVecD{{{var_up},{var_do}}}", {{"up", "do"}}, "{nuisance["name"]}");\n'
+                        var_up = weight.replace(samples_entry[0], samples_entry[1])
+                        var_do = weight.replace(samples_entry[0], samples_entry[2])
+                        out += f'    varied_df = varied_df.Vary("my_sample_weight", "ROOT::RVecD{{{var_up},{var_do}}}", {{"{TAG_UP}", "{TAG_DOWN}"}}, "{nuisance["name"]}");\n'
                 else:
-                    var_up = self._ps_safe(f"(my_sample_weight) * {samples_entry[0]}") ### mcortino: ps weight update
-                    var_do = self._ps_safe(f"(my_sample_weight) * {samples_entry[1]}") ### mcortino: ps weight update
-                    out += f'    varied_df = varied_df.Vary("my_sample_weight", "ROOT::RVecD{{{var_up},{var_do}}}", {{"up", "do"}}, "{nuisance["name"]}");\n'
+                    var_up = f"(my_sample_weight) * {samples_entry[0]}"
+                    var_do = f"(my_sample_weight) * {samples_entry[1]}"
+                    out += f'    varied_df = varied_df.Vary("my_sample_weight", "ROOT::RVecD{{{var_up},{var_do}}}", {{"{TAG_UP}", "{TAG_DOWN}"}}, "{nuisance["name"]}");\n'
         return out
 
     def _build_cpp_variations_special(self, sampleName):
@@ -392,7 +377,6 @@ std::vector<std::string> getBranchNames(TTree* tree) {
 #include "TH1D.h"
 #include "TDirectory.h"
 #include "TChain.h"
-#include "TInterpreter.h" ////// mcortino: ps weight update
 #include <map>
 #include <vector>
 #include <string>
@@ -411,8 +395,6 @@ std::vector<std::string> getBranchNames(TTree* tree) {
 
 int main() {{
     ROOT::DisableImplicitMT();
-
-    gInterpreter->Declare(R"CPP({PS_WEIGHT_HELPER})CPP"); ////// mcortino: added TInterpreter, ps weight update
 
     {frags['lines_to_process']}
 
@@ -497,13 +479,13 @@ int main() {{
           bool found_avg = false;
           for (auto const& [sp, nn] : map_nuisances_name_for_averaged_histograms) {{
             std::string nu = nn.first; int nv = nn.second;
-            std::regex rup("histo_.*__NORM__.*_" + sp + "up");
-            std::regex rdo("histo_.*__NORM__.*_" + sp + "do");
+            std::regex rup("histo_.*__NORM__.*_" + sp + "{TAG_UP}");
+            std::regex rdo("histo_.*__NORM__.*_" + sp + "{TAG_DOWN}");
             if (std::regex_search(temp_name, rup) || std::regex_search(temp_name, rdo)) {{
               std::string hn = std::regex_replace(std::regex_replace(temp_name, std::regex("__NORM__[0-9]+_"), ""), std::regex(sp), nu);
               histo->SetName(hn.c_str());
               bool isUp = std::regex_search(temp_name, rup);
-              std::string key = isUp ? sp+"up" : sp+"do"; std::string nukey = isUp ? nu+"up" : nu+"do";
+              std::string key = isUp ? sp+"{TAG_UP}" : sp+"{TAG_DOWN}"; std::string nukey = isUp ? nu+"{TAG_UP}" : nu+"{TAG_DOWN}";
               if (auto it = map_nuisances_average_histogram.find(key); it != map_nuisances_average_histogram.end())
                 it->second.Add(histo.get(), 1./nv);
               else {{ map_nuisances_average_histogram[nukey] = (*histo); found_avg = true; break; }}
