@@ -182,7 +182,7 @@ class AnalysisFactory:
     # which is assumed as default in absence of a custom one
     DEFAULT_JOBS_CONFIG = { # default values 
         'submitBatch':     {'jobFlavour': 'longlunch', 'request_memory': '3000'},
-        'haddBatch':       {'jobFlavour': 'tomorrow', 'request_memory': '51200'},
+        'haddBatch':       {'jobFlavour': 'longlunch', 'request_memory': '3000'},
         'parallelCompile': {'jobFlavour': 'longlunch', 'request_memory': '3000'},
     }
     @classmethod
